@@ -10,7 +10,9 @@ function setupModel(data) {
   const action = mixer.clipAction(clip);
   action.play();
 
-  model.tick = (delta) => mixer.update(delta);
+  model.tick = (delta) => {
+    mixer.update(delta);
+  };
 
   return model;
 }

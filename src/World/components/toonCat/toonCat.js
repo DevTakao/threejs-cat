@@ -9,7 +9,6 @@ async function loadToonCat() {
   console.log("Meow!", toonCatData);
   const modelScale = 0.01;
 
-  // Assuming your model contains a single mesh or object
   if (toonCatData.scene) {
     toonCatData.scene.scale.set(modelScale, modelScale, modelScale);
     toonCatData.scene.traverse((child) => {
