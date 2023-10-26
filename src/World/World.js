@@ -6,6 +6,7 @@ import { createControls } from "./systems/controls";
 import { loadToonCat } from "./components/toonCat/toonCat";
 import { createGround } from "./components/ground";
 import { Loop } from "./systems/Loop.js";
+import { createPhysics } from "./systems/physics";
 
 import { createCube } from "./components/cube.js";
 import { createHelpers } from "./components/helpers";
@@ -14,12 +15,12 @@ import { createDragControls } from "./systems/dragControls";
 let camera;
 let renderer;
 let scene;
-let lights;
 let loop;
+let physicsWorld;
 let controls;
 let draggableObjects = [];
 let dragControls;
-
+let isDragging = false;
 class World {
   constructor(container) {
     console.log("world constructed", container);
@@ -33,40 +34,65 @@ class World {
     camera.updateProjectionMatrix();
 
     scene = createScene();
-    lights = createLights();
     loop = new Loop(camera, scene, renderer);
+
+    physicsWorld = createPhysics();
+    physicsWorld.tick = (delta) => {
+      if (delta && !isDragging) {
+        console.log("p tick");
+        physicsWorld.step(delta);
+      }
+    };
+    loop.updatables.push(physicsWorld);
 
     controls = createControls(camera, renderer.domElement);
     loop.updatables.push(controls);
 
     dragControls = createDragControls(draggableObjects, camera, renderer.domElement);
-    dragControls.transformGroup = true;
+    // dragControls.transformGroup = true;
     dragControls.addEventListener("dragstart", function (event) {
+      isDragging = true;
       controls.enabled = false;
     });
     dragControls.addEventListener("dragend", function (event) {
+      isDragging = false;
       controls.enabled = true;
     });
 
     const { ambientLight, mainLight } = createLights();
-
     scene.add(ambientLight, mainLight);
 
-    const ground = createGround();
+    const { ground, groundBody } = createGround();
     scene.add(ground);
+    physicsWorld.addBody(groundBody);
 
-    // for debugging purposes
-    // const { lightHelper, axesHelper } = createHelpers(mainLight);
+    //* for debugging purposes
+    const { lightHelper, axesHelper, cannonDebugger } = createHelpers(scene, physicsWorld, mainLight);
     // scene.add(lightHelper, axesHelper);
+    loop.updatables.push(cannonDebugger);
 
-    // const cube = createCube();
-    // draggableObjects.push(cube);
-    // scene.add(cube);
+    const { cube, cubeBody } = createCube();
+    cube.tick = () => {
+      if (!isDragging) {
+        cube.position.copy(cubeBody.position);
+        cube.quaternion.copy(cubeBody.quaternion);
+      }
+    };
+    cubeBody.tick = () => {
+      if (isDragging) {
+        cubeBody.position.copy(cube.position);
+        cubeBody.quaternion.copy(cube.quaternion);
+      }
+    };
+
+    draggableObjects.push(cube);
+    loop.updatables.push(cube, cubeBody);
+    scene.add(cube);
+    physicsWorld.addBody(cubeBody);
   }
 
   async init() {
     const toonCat = await loadToonCat();
-    // controls.target.copy(toonCat.position);
     draggableObjects.push(toonCat);
     loop.updatables.push(toonCat);
     scene.add(toonCat);

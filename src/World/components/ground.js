@@ -1,4 +1,5 @@
 import { BoxGeometry, MeshStandardMaterial, Mesh, DoubleSide } from "three";
+import { Body, Box, Vec3 } from "cannon-es"; // Make sure your import is correct
 
 function createGround() {
   const geometry = new BoxGeometry(1000, 1000, 20);
@@ -10,7 +11,22 @@ function createGround() {
   ground.position.set(0, -10, 0);
   ground.rotation.x = Math.PI / 2;
 
-  return ground;
+  // Physics
+  const halfExtents = new Vec3(500, 500, 10);
+  const groundBodyShape = new Box(halfExtents);
+  const groundBody = new Body({ mass: 0, shape: groundBodyShape });
+
+  groundBody.position.copy(ground.position);
+  groundBody.quaternion.copy(ground.quaternion);
+
+  groundBody.mesh = ground;
+
+  groundBody.tick = () => {
+    groundBody.position.copy(groundBody.mesh.position);
+    groundBody.quaternion.copy(groundBody.mesh.quaternion);
+  };
+
+  return { ground, groundBody };
 }
 
 export { createGround };
