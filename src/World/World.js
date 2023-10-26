@@ -18,9 +18,10 @@ let scene;
 let loop;
 let physicsWorld;
 let controls;
-let draggableObjects = [];
-let dragControls;
-let isDragging = false;
+let cubeDragControls;
+let catDragControls;
+let isCubeDragging = false;
+let isCatDragging = false;
 class World {
   constructor(container) {
     console.log("world constructed", container);
@@ -38,7 +39,7 @@ class World {
 
     physicsWorld = createPhysics();
     physicsWorld.tick = (delta) => {
-      if (delta && !isDragging) {
+      if (delta && !isCubeDragging && !isCatDragging) {
         console.log("p tick");
         physicsWorld.step(delta);
       }
@@ -47,17 +48,6 @@ class World {
 
     controls = createControls(camera, renderer.domElement);
     loop.updatables.push(controls);
-
-    dragControls = createDragControls(draggableObjects, camera, renderer.domElement);
-    // dragControls.transformGroup = true;
-    dragControls.addEventListener("dragstart", function (event) {
-      isDragging = true;
-      controls.enabled = false;
-    });
-    dragControls.addEventListener("dragend", function (event) {
-      isDragging = false;
-      controls.enabled = true;
-    });
 
     const { ambientLight, mainLight } = createLights();
     scene.add(ambientLight, mainLight);
@@ -73,29 +63,63 @@ class World {
 
     const { cube, cubeBody } = createCube();
     cube.tick = () => {
-      if (!isDragging) {
+      if (!isCubeDragging) {
         cube.position.copy(cubeBody.position);
         cube.quaternion.copy(cubeBody.quaternion);
       }
     };
     cubeBody.tick = () => {
-      if (isDragging) {
+      if (isCubeDragging) {
         cubeBody.position.copy(cube.position);
         cubeBody.quaternion.copy(cube.quaternion);
       }
     };
 
-    draggableObjects.push(cube);
     loop.updatables.push(cube, cubeBody);
+    cubeDragControls = createDragControls([cube], camera, renderer.domElement);
+    // dragControls.transformGroup = true;
+    cubeDragControls.addEventListener("dragstart", function (event) {
+      isCubeDragging = true;
+      controls.enabled = false;
+    });
+    cubeDragControls.addEventListener("dragend", function (event) {
+      isCubeDragging = false;
+      controls.enabled = true;
+    });
     scene.add(cube);
     physicsWorld.addBody(cubeBody);
   }
 
   async init() {
-    const toonCat = await loadToonCat();
-    draggableObjects.push(toonCat);
-    loop.updatables.push(toonCat);
-    scene.add(toonCat);
+    const { cat, catBody } = await loadToonCat();
+    cat.tick = () => {
+      if (!isCatDragging) {
+        cat.position.set(catBody.position.x, catBody.position.y, catBody.position.z);
+        cat.quaternion.copy(catBody.quaternion);
+      }
+    };
+    catBody.tick = () => {
+      if (isCatDragging) {
+        console.log(cat);
+        catBody.position.set(cat.position.x, cat.position.y, cat.position.z);
+        catBody.quaternion.copy(cat.quaternion);
+      }
+    };
+    loop.updatables.push(cat, catBody);
+    scene.add(cat);
+
+    catDragControls = createDragControls([cat], camera, renderer.domElement);
+    catDragControls.transformGroup = true;
+    catDragControls.addEventListener("dragstart", function (event) {
+      isCatDragging = true;
+      controls.enabled = false;
+    });
+    catDragControls.addEventListener("dragend", function (event) {
+      isCatDragging = false;
+      controls.enabled = true;
+    });
+
+    physicsWorld.addBody(catBody);
   }
 
   render() {

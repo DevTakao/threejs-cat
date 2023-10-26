@@ -7,12 +7,12 @@ function createCube() {
   const cube = new Mesh(geometry, material);
   cube.castShadow = true;
 
-  cube.position.set(0, 200, 0);
+  cube.position.set(-350, 450, 350);
 
   // Physics
   const halfExtents = new Vec3(100, 100, 100);
   const cubeBodyShape = new Box(halfExtents);
-  const cubeBody = new Body({ mass: 50, shape: cubeBodyShape });
+  const cubeBody = new Body({ mass: 1, shape: cubeBodyShape });
 
   cubeBody.position.copy(cube.position);
   cubeBody.quaternion.copy(cube.quaternion);
