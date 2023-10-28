@@ -6,20 +6,20 @@ import { createControls } from "./systems/controls";
 import { loadToonCat } from "./components/toonCat/toonCat";
 import { createGround } from "./components/ground";
 import { Loop } from "./systems/Loop.js";
+import { createPhysics } from "./systems/physics";
 
-import { createCube } from "./components/cube.js";
-import { createHelpers } from "./components/helpers";
 import { createDragControls } from "./systems/dragControls";
 
 let camera;
 let renderer;
 let scene;
-let lights;
 let loop;
+let physicsWorld;
 let controls;
-let draggableObjects = [];
-let dragControls;
-
+let cubeDragControls;
+let catDragControls;
+let isCubeDragging = false;
+let isCatDragging = false;
 class World {
   constructor(container) {
     console.log("world constructed", container);
@@ -33,43 +33,103 @@ class World {
     camera.updateProjectionMatrix();
 
     scene = createScene();
-    lights = createLights();
     loop = new Loop(camera, scene, renderer);
+
+    physicsWorld = createPhysics();
+    physicsWorld.tick = (delta) => {
+      if (delta) {
+        console.log("p tick");
+        physicsWorld.step(delta);
+      }
+    };
+    loop.updatables.push(physicsWorld);
 
     controls = createControls(camera, renderer.domElement);
     loop.updatables.push(controls);
 
-    dragControls = createDragControls(draggableObjects, camera, renderer.domElement);
-    dragControls.transformGroup = true;
-    dragControls.addEventListener("dragstart", function (event) {
-      controls.enabled = false;
-    });
-    dragControls.addEventListener("dragend", function (event) {
-      controls.enabled = true;
-    });
-
     const { ambientLight, mainLight } = createLights();
-
     scene.add(ambientLight, mainLight);
 
-    const ground = createGround();
+    const { ground, groundBody } = createGround();
     scene.add(ground);
+    physicsWorld.addBody(groundBody);
 
-    // for debugging purposes
-    // const { lightHelper, axesHelper } = createHelpers(mainLight);
+    //* for debugging purposes
+    // const { lightHelper, axesHelper, cannonDebugger } = createHelpers(scene, physicsWorld, mainLight);
     // scene.add(lightHelper, axesHelper);
+    // loop.updatables.push(cannonDebugger);
 
-    // const cube = createCube();
-    // draggableObjects.push(cube);
+    // const { cube, cubeBody } = createCube();
+    // cube.tick = () => {
+    //   if (!isCubeDragging) {
+    //     cube.position.copy(cubeBody.position);
+    //     cube.quaternion.copy(cubeBody.quaternion);
+    //   }
+    // };
+    // cubeBody.tick = () => {
+    //   if (isCubeDragging) {
+    //     cubeBody.position.copy(cube.position);
+    //     cubeBody.quaternion.copy(cube.quaternion);
+    //   }
+    // };
+
+    // loop.updatables.push(cube, cubeBody);
+    // cubeDragControls = createDragControls([cube], camera, renderer.domElement);
+    // // dragControls.transformGroup = true;
+    // cubeDragControls.addEventListener("dragstart", function (event) {
+    //   isCubeDragging = true;
+    //   controls.enabled = false;
+    // });
+    // cubeDragControls.addEventListener("dragend", function (event) {
+    //   isCubeDragging = false;
+    //   controls.enabled = true;
+    // });
     // scene.add(cube);
+    // physicsWorld.addBody(cubeBody);
   }
 
   async init() {
-    const toonCat = await loadToonCat();
-    // controls.target.copy(toonCat.position);
-    draggableObjects.push(toonCat);
-    loop.updatables.push(toonCat);
-    scene.add(toonCat);
+    const { cat, catBody } = await loadToonCat();
+    cat.tick = (delta) => {
+      cat.mixer.update(delta);
+      if (!isCatDragging) {
+        cat.position.set(catBody.position.x, catBody.position.y - 180, catBody.position.z);
+        cat.quaternion.copy(catBody.quaternion);
+      }
+    };
+    catBody.tick = () => {
+      if (isCatDragging) {
+        catBody.position.set(cat.position.x, cat.position.y + 180, cat.position.z);
+        catBody.quaternion.copy(cat.quaternion);
+      }
+    };
+    loop.updatables.push(cat, catBody);
+    scene.add(cat);
+
+    catDragControls = createDragControls([cat], camera, renderer.domElement);
+    catDragControls.transformGroup = true;
+    catDragControls.addEventListener("dragstart", function (event) {
+      event.object.traverse((child) => {
+        if (child.isMesh) {
+          child.material.emissive.set(0xffffff);
+          child.material.emissiveIntensity = 0.2;
+        }
+      });
+      isCatDragging = true;
+      controls.enabled = false;
+    });
+    catDragControls.addEventListener("dragend", function (event) {
+      event.object.traverse((child) => {
+        if (child.isMesh) {
+          child.material.emissive.set(0x000000);
+          child.material.emissiveIntensity = 0;
+        }
+      });
+      isCatDragging = false;
+      controls.enabled = true;
+    });
+
+    physicsWorld.addBody(catBody);
   }
 
   render() {
