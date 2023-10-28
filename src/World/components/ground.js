@@ -8,7 +8,7 @@ function createGround() {
   ground.castShadow = true;
   ground.receiveShadow = true;
 
-  ground.position.set(0, -10, 0);
+  ground.position.set(0, 0, 0);
   ground.rotation.x = Math.PI / 2;
 
   // Physics
@@ -18,7 +18,7 @@ function createGround() {
 
   groundBody.position.copy(ground.position);
   groundBody.quaternion.copy(ground.quaternion);
-
+  groundBody.collisionResponse = true;
   groundBody.mesh = ground;
 
   groundBody.tick = () => {
