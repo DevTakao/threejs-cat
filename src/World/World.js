@@ -12,6 +12,7 @@ import { createDragControls } from "./systems/dragControls";
 //* debuggers
 import { createHelpers } from "./components/helpers";
 import { createCube } from "./components/cube";
+import { Vector3 } from "three";
 
 let camera;
 let renderer;
@@ -25,6 +26,10 @@ let isCatDragging = false;
 //* debuggers
 let cubeDragControls;
 let isCubeDragging = false;
+let lowestPossibleCubePos;
+
+let cubeCurrentPos;
+let cubeCurrentVelo;
 
 class World {
   constructor(container) {
@@ -48,7 +53,6 @@ class World {
     physicsWorld = createPhysics();
     physicsWorld.tick = (delta) => {
       if (delta) {
-        console.log("p tick");
         physicsWorld.step(delta);
       }
     };
@@ -66,15 +70,22 @@ class World {
     const { ground, groundBody } = createGround();
     scene.add(ground);
     physicsWorld.addBody(groundBody);
+    groundBody.updateAABB();
+    lowestPossibleCubePos = groundBody.aabb.upperBound.y + 100 /*cube half extent*/;
 
     //* for debugging purposes
     const { lightHelper, axesHelper, cannonDebugger } = createHelpers(scene, physicsWorld, mainLight);
-    scene.add(lightHelper, axesHelper);
+    scene.add(
+      // lightHelper,
+      axesHelper
+    );
     loop.updatables.push(cannonDebugger);
 
     const { cube, cubeBody } = createCube();
     cube.tick = () => {
       if (!isCubeDragging) {
+        // cubeCurrentPos = new Vector3(cube.position.x, cube.position.y, cube.position.z);
+
         cube.position.copy(cubeBody.position);
         cube.quaternion.copy(cubeBody.quaternion);
       }
@@ -82,7 +93,6 @@ class World {
     cubeBody.tick = () => {
       if (isCubeDragging) {
         cubeBody.position.copy(cube.position);
-        cubeBody.quaternion.copy(cube.quaternion);
       }
     };
 
@@ -94,6 +104,13 @@ class World {
     cubeDragControls.addEventListener("dragstart", function (event) {
       isCubeDragging = true;
       controls.enabled = false;
+    });
+    cubeDragControls.addEventListener("drag", function (event) {
+      const collided = cube.position.y < lowestPossibleCubePos; //* Finally got it :) :D
+      if (collided) {
+        console.log("collided");
+        cube.position.y = lowestPossibleCubePos;
+      }
     });
     cubeDragControls.addEventListener("dragend", function (event) {
       isCubeDragging = false;
