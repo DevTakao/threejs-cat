@@ -1,5 +1,8 @@
-export default {
+import { defineConfig } from "vite";
+
+export default defineConfig({
   base: "/threejs-cat/",
+  assetsInclude: ["**/*.glb"],
   build: {
     rollupOptions: {
       output: {
@@ -8,4 +11,4 @@ export default {
       },
     },
   },
-};
+});
