@@ -1,5 +1,11 @@
 export default {
+  base: "/threejs-cat/",
   build: {
-    outDir: "docs",
+    rollupOptions: {
+      output: {
+        // Enable hashed URL mode
+        manualChunks: () => "hashed",
+      },
+    },
   },
 };
