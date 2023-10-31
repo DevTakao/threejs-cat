@@ -1,11 +1,12 @@
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { setupModel } from "./setupModel";
 import { Body, Box, Vec3 } from "cannon-es";
+import ToonCat from "../../../../assets/models/toon_cat_free.glb";
 
 async function loadToonCat() {
   const loader = new GLTFLoader();
 
-  const toonCatData = await loader.loadAsync("assets/models/toon_cat_free.glb");
+  const toonCatData = await loader.loadAsync(ToonCat);
 
   const catMesh = toonCatData.scene.getObjectByName("Object_43");
   catMesh.castShadow = true;
