@@ -24,7 +24,7 @@ async function loadToonCat() {
     ((catBounds.max.z - catBounds.min.z) / 2) * scale + 20
   );
   const catBodyShape = new Box(halfExtents);
-  const catBody = new Body({ mass: 1, shape: catBodyShape });
+  const catBody = new Body({ mass: 100, shape: catBodyShape });
 
   catBody.position.set(cat.position.x, cat.position.y + 180, cat.position.z);
   catBody.quaternion.copy(cat.quaternion);
