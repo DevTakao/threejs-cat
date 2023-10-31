@@ -2,4 +2,4 @@
 
 To run:  
 #1 `yarn install` or other similar commands to install packages.  
-#2 `npx vite`
+#2 `yarn dev`
